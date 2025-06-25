@@ -39,20 +39,8 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 with tab1:
     st.header("Customer Segment Distribution")
     seg_counts = data['ClusterLabel'].value_counts().sort_values(ascending=False)
-    fig, ax = plt.subplots(figsize=(8, 5))
-    colors = sns.color_palette('Set2', n_colors=len(seg_counts))
-    bars = ax.bar(seg_counts.index, seg_counts.values, color=colors, edgecolor='black')
-    ax.set_ylabel('Number of Customers', fontsize=12)
-    ax.set_xlabel('Segment', fontsize=12)
-    ax.set_title('Number of Customers per Segment', fontsize=14, fontweight='bold')
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.bar_label(bars, padding=3, fontsize=11)
-    plt.xticks(rotation=15, ha='right', fontsize=11)
-    plt.yticks(fontsize=11)
-    plt.tight_layout()
-    st.pyplot(fig)
-    st.dataframe(seg_counts.rename_axis('Segment').reset_index(name='Count'))
+    st.bar_chart(seg_counts, use_container_width=True)
+    st.dataframe(seg_counts.rename_axis('Segment').reset_index(name='Count'), use_container_width=True)
     st.markdown("**Segment Descriptions:**")
     for seg, desc in descriptions.items():
         st.markdown(f"- **{seg}**: {desc}")
@@ -60,24 +48,14 @@ with tab1:
 with tab2:
     st.header("RFM Feature Means by Segment")
     rfm_means = data.groupby('ClusterLabel')[['Recency', 'Frequency', 'MonetaryValue']].mean().round(2)
-    st.dataframe(rfm_means)
+    st.dataframe(rfm_means, use_container_width=True)
     st.markdown("**Visual Comparison:**")
-    features = ['Recency', 'Frequency', 'MonetaryValue']
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
-    colors = sns.color_palette('Set2', n_colors=len(rfm_means))
-    for i, feature in enumerate(features):
-        axes[i].bar(rfm_means.index, rfm_means[feature], color=colors, edgecolor='black')
-        axes[i].set_title(f'{feature} by Segment', fontsize=13, fontweight='bold')
-        axes[i].set_xlabel('Segment', fontsize=11)
-        axes[i].set_ylabel(f'Mean {feature}', fontsize=11)
-        axes[i].spines['top'].set_visible(False)
-        axes[i].spines['right'].set_visible(False)
-        axes[i].tick_params(axis='x', rotation=15)  
-        for bar in axes[i].patches:
-            axes[i].annotate(f'{bar.get_height():.1f}', (bar.get_x() + bar.get_width() / 2, bar.get_height()),
-                             ha='center', va='bottom', fontsize=10)
-    plt.tight_layout()
-    st.pyplot(fig)
+    st.subheader("Recency by Segment")
+    st.bar_chart(rfm_means['Recency'], use_container_width=True)
+    st.subheader("Frequency by Segment")
+    st.bar_chart(rfm_means['Frequency'], use_container_width=True)
+    st.subheader("Monetary Value by Segment")
+    st.bar_chart(rfm_means['MonetaryValue'], use_container_width=True)
 
 with tab3:
     st.header("Explore Segment Details")
@@ -86,18 +64,20 @@ with tab3:
     seg_df = data[data['ClusterLabel'] == segment]
     st.write(f"Number of customers: {len(seg_df)}")
     st.write("**RFM Statistics:**")
-    st.dataframe(seg_df[['Recency', 'Frequency', 'MonetaryValue']].describe().T)
+    st.dataframe(seg_df[['Recency', 'Frequency', 'MonetaryValue']].describe().T, use_container_width=True)
     st.write("**Sample Customers:**")
-    st.dataframe(seg_df.head(10))
+    st.dataframe(seg_df.head(10), use_container_width=True)
 
 with tab4:
     st.header("Customer Lookup")
     cust_id = st.text_input("Enter CustomerID to lookup:")
     if cust_id:
-        result = data[data['CustomerID'].astype(str) == cust_id]
+        # Ensure the input is always in the float format with .0
+        cust_id_float = f"{float(cust_id):.1f}"
+        result = data[data['Customer ID'].astype(str) == cust_id_float]
         if not result.empty:
             st.write("**Customer Details:**")
-            st.dataframe(result)
+            st.dataframe(result, use_container_width=True)
             st.markdown(f"**Segment:** {result.iloc[0]['ClusterLabel']} - {descriptions.get(result.iloc[0]['ClusterLabel'], '')}")
         else:
             st.warning("CustomerID not found.")
@@ -111,3 +91,16 @@ with tab5:
         mime="text/csv"
     )
     st.info("You can download the full customer segmentation data for further analysis.")
+
+
+st.sidebar.image("https://streamlit.io/images/brand/streamlit-logo-secondary-colormark-darktext.png", width=180)
+st.sidebar.title("Customer Segmentation App")
+st.sidebar.markdown("""
+This interactive dashboard helps you:
+- Understand your customer segments
+- Explore RFM features
+- Lookup individual customers
+- Download the data for further analysis
+
+**Tip:** Use the tabs above to navigate!
+""")
